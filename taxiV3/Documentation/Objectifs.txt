@@ -1,0 +1,36 @@
+Résumé du projet Taxi-v3
+
+L'objectif est de résoudre le jeu Taxi-v3, disponible dans la bibliothèque Gym, à l'aide d'un algorithme d'apprentissage par renforcement sans modèle (model-free). 
+L'agent (le taxi) doit récupérer des passagers aléatoires et les déposer à des destinations spécifiques.
+
+Contraintes et recommandations :
+
+    Choix libre de l’algorithme (on-policy ou off-policy).
+    Recommandation d'utiliser Deep Q-Learning ou des algorithmes basés sur Monte Carlo.
+    Possibilité d'étendre le jeu en optimisant un trajet pour deux passagers et quatre destinations.
+
+Fonctionnalités minimales du programme :
+
+    Mode utilisateur : permet d’ajuster les paramètres de l’algorithme.
+    Mode limité dans le temps : optimise le nombre d’étapes pour résoudre le problème en un temps donné.
+    Le nombre d’épisodes de formation et de test doit être défini par l’utilisateur au lancement du programme.
+
+Résultats attendus :
+
+    Calcul des temps moyens pour finir le jeu et des récompenses moyennes sur l’ensemble des épisodes.
+    Affichage de quelques épisodes aléatoires.
+    Benchmark de la performance de l’algorithme à l’aide de plusieurs métriques et paramètres.
+    Comparaison avec un algorithme naïf (brute force).
+        Un algorithme bruteforce prend ~350 étapes.
+        Un modèle RL bien optimisé ne prend que 20 étapes.
+
+Livrables :
+
+Un rapport détaillant :
+
+    Les benchmarks et analyses justifiant le choix et le réglage de l’algorithme.
+    La stratégie d’optimisation (ajustement des paramètres et définition des récompenses).
+    Des graphiques et tableaux illustrant les performances.
+    Comparaison avec d’autres algorithmes (ex. : Q-Learning vs Deep Q-Learning).
+
+But final : Optimiser l’algorithme pour réduire le nombre d’étapes et améliorer l'efficacité de l'agent.
