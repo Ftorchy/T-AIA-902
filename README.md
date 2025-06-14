@@ -1,105 +1,74 @@
-# T-AIA-902
-Projet : Apprentissage par renforcement avec Taxi-v3
+# Taxi-v3 - STG-6
 
-Ce projet implémente un agent basé sur l’algorithme Q-learning pour résoudre l’environnement Taxi-v3 de la librairie Gymnasium (anciennement Gym).
+**Membres du groupe:**
+- Hamdi NASSRI
+- Jeffrey WINKLER
+- Mathéo VITALI
+- Florian TORCHY
 
-    L’objectif de l’environnement Taxi-v3 est de déplacer un taxi (représenté par une lettre “yellow” dans la grille) pour prendre un passager et le déposer au bon endroit, tout en optimisant le nombre de mouvements.
+**Interface web Streamlit** pour expérimenter l’apprentissage par renforcement sur l’environnement **Gym / Taxi-v3**.  
 
-Sommaire
+---
 
-    Fonctionnalités
-    Prérequis
-    Installation
-    Comment exécuter
-    Détails de l’algorithme
-    Visualiser les résultats
-    Structure du projet
-    Aller plus loin
-    Licence
+## Sommaire
+- [Taxi-v3 - STG-6](#taxi-v3---stg-6)
+  - [Sommaire](#sommaire)
+  - [Aperçu](#aperçu)
+  - [Installation](#installation)
+  - [Lancement](#lancement)
+  - [Fonctionnalités](#fonctionnalités)
+  - [Rapport de datascience](#rapport-de-datascience)
+  - [Crédits \& Licence](#crédits--licence)
 
-Fonctionnalités
+---------------------------------------------------------------------------------
 
-    Entraînement d’un agent avec Q-learning sur Taxi-v3.
-    Sauvegarde et chargement de la table de Q-valeurs dans un fichier taxi.pkl (via la librairie pickle).
-    Visualisation de la performance de l’agent au fil des épisodes (courbe de somme des récompenses).
-    Exécution en mode test avec affichage du rendu (render) pour observer l’agent en action.
+## Aperçu
+![alt text](/taxiV3/Documentation/taxi.gif)
 
-Prérequis
 
-    Python 3.7 ou version supérieure
-    Gymnasium (pour l’environnement Taxi-v3)
-    NumPy
-    Matplotlib
-    pickle (inclus nativement dans Python)
+---
 
-Installation
+## Installation
 
-    Cloner ce dépôt ou téléchargez les fichiers dans un dossier local.
-    Ouvrez un terminal dans ce dossier et installez les dépendances :
+git clone https://github.com/Ftorchy/T-AIA-902.git
 
-    pip install gymnasium numpy matplotlib
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
-    Si vous utilisez un environnement virtuel (recommandé), activez-le au préalable.
 
-Comment exécuter
+---
 
-Le script principal s’appelle par exemple taxi.py (ou autre nom équivalent). Il contient deux étapes :
+## Lancement
 
-    Entraînement de l’agent pendant 15 000 épisodes (avec génération de la Q-table).
-    Test de l’agent pendant 10 épisodes avec affichage du rendu graphique.
+streamlit run app.py
+(L'application s'ouvre automatiquement dans le navigateur http://localhost:8501)
 
-Exécutez :
+---
 
-python taxi.py
+## Fonctionnalités
 
-Par défaut, la fonction run() est appelée deux fois :
+| Bloc                     | Description                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| **Sidebar — Q-Learning** | Réglage α, γ, ε, nombre d’épisodes. Bouton « Entraîner & sauvegarder ».              |
+| **Liste de modèles**     | Liste déroulante des `.json` enregistrés ; bouton 🗑️ pour supprimer.                |
+| **Fiche modèle**         | Hyper-paramètres, KPI (Reward/Steps/Succès) + graphiques Altair sur 100 runs.        |
+| **Comparatif**           | Tableau trié *Reward ↓ , Steps ↑* avec hyper-paramètres et date.                     |
 
-    En mode entraînement : run(15000)
-    En mode test : run(10, is_training=False, render=True)
+**La feature deep-q-learning sera ajoutée sous peu**
 
-Détails de l’algorithme
+---
 
-Le code implémente l’algorithme Q-learning, décrit par les équations suivantes :
-Q(s,a)←Q(s,a)  +  α(r+γmax⁡a′Q(s′,a′)  −  Q(s,a))
-Q(s,a)←Q(s,a)+α(r+γa′max​Q(s′,a′)−Q(s,a))
+## Rapport de datascience
+https://epitechfr-my.sharepoint.com/:w:/r/personal/florian_torchy_epitech_eu/Documents/Rapport%20Data%20Science.docx?d=w8a894ec3e03348208c1dbe0d808c9e35&csf=1&web=1&e=ToV1OZ
 
-    ss : l’état actuel (position du taxi, du passager, etc.).
-    aa : l’action entreprise (0=aller à gauche, 1=descendre, 2=aller à droite, 3=monter, etc.).
-    rr : la récompense reçue après avoir effectué l’action aa.
-    s′s′ : le nouvel état après l’action.
-    αα (learning rate) : taux d’apprentissage (définit à 0.9 au départ).
-    γγ (discount factor) : facteur de pondération des récompenses futures (définit à 0.9).
-    ϵϵ : facteur d’exploration (au départ 1, puis décroît progressivement).
+---
 
-Stratégie ϵϵ-greedy
+## Crédits & Licence
 
-    Avec une probabilité ϵϵ, on explore : on choisit une action aléatoire.
-    Avec une probabilité 1−ϵ1−ϵ, on exploite : on choisit l’action qui maximise la Q-valeur courante.
-    ϵϵ décroît au fil des épisodes, afin de privilégier la découverte au début et l’exploitation à la fin.
-
-Visualiser les résultats
-
-    Graphique : À la fin de l’exécution en mode entraînement, un fichier taxi.png est créé. Il représente la somme des récompenses sur les 100 derniers épisodes pour chaque épisode.
-    Rendu graphique : Lors du mode test (avec render=True), une fenêtre s’ouvre (ou un affichage texte dans le terminal selon la version de Gymnasium) pour montrer l’évolution du taxi dans la grille.
-
-Structure du projet
-
-.
-├── taxi.py             # Script principal, contenant l'apprentissage et le test
-├── taxi.pkl            # Fichier contenant la Q-table (généré après l'entraînement)
-├── taxi.png            # Graphique des performances (généré après l'entraînement)
-└── README.md           # Ce fichier de documentation
-
-Aller plus loin
-
-    Hyperparamètres : Vous pouvez ajuster learning_rate_a, discount_factor_g, epsilon, etc. pour étudier leur impact sur la vitesse et la qualité d’apprentissage.
-    Politique d’exploration : Remplacer la stratégie ϵϵ-greedy par d’autres méthodes (Boltzmann, etc.).
-    Environnements : Tester l’algorithme sur d’autres environnements Gymnasium pour comparer les performances de Q-learning.
-    Algorithmes : Expérimenter avec d’autres approches d’apprentissage par renforcement (SARSA, Deep Q-Network, etc.).
-
-Licence
-
-Ce projet est disponible sous licence libre (à adapter selon vos besoins ou licence choisie).
-Vous êtes libre de le cloner, le modifier et de le partager.
-
-Bonne exploration et bon apprentissage avec Taxi-v3 !
+| Ressource               | Licence                                  |
+| ----------------------- | ---------------------------------------- |
+| **Gymnasium / Taxi-v3** | MIT                                      |
+| **Streamlit**           | Apache 2                                 |
+| **Altair**              | BSD-3                                    |
+| **Code du projet**      | STG-6 © 2025 - Epitech Strasbourg        |
