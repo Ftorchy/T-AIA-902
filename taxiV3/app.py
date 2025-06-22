@@ -6,7 +6,7 @@ import altair as alt
 import gymnasium as gym
 from pathlib import Path
 from rl.trainers import q_learning as ql
-# Pour plus tard import : from rl.trainers import dqn
+from rl.trainers import dqn
 from rl import model_bank as bank
 
 MODELS_DIR = bank.MODELS_DIR
@@ -44,8 +44,25 @@ with q_tab:
 
 # Contenu onglet Deep-Q-Learning
 with d_tab:
-    st.info("Deep Q‑Learning — à venir")
-    
+    st.subheader("Paramètres DQN")
+    dhp = dict(
+        episodes   = st.number_input("Episodes", 1000, 20000, 3000, 500, key="dqn_ep"),
+        gamma      = st.slider("γ", 0.0, 0.99, 0.95, 0.01, key="dqn_gamma"),
+        lr         = st.number_input("lr", 1e-5, 1e-2, 1e-3, format="%f", key="dqn_lr"),
+        eps0       = st.slider("ε₀", 0.0, 1.0, 1.0, 0.05, key="dqn_eps0"),
+        eps_min    = 0.05,
+        eps_decay  = 0.0005,
+        batch      = 64,
+        memory     = 20_000,
+        target_sync= 500,
+        max_steps  = 200,
+    )
+    d_name = st.text_input("Nom modèle", placeholder="dqn_best", key="dqn_name")
+    if st.button("Entraîner & sauvegarder", key="dqn_train"):
+        res = dqn.train(dhp)
+        ok, saved = bank.save(d_name, res, dhp)
+        st.success(f"Modèle enregistré sous « {saved} »") if ok else st.error(saved)
+        st.rerun() 
     
 # Contenu page principal (si Deep-Q-Learning selectionné)
 st.title("Taxi-v3 – Modèles enregistrés")

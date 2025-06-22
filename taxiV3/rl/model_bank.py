@@ -68,3 +68,7 @@ def load(name):
     data_path = _data_path(name, algo)
     data = np.load(data_path) if algo == "q_learning" else torch.load(data_path)
     return algo, data, meta
+
+def _data_path(name, algo):
+    # Q-learning → .npy  /  DQN → .pt
+    return MODELS_DIR / f"{name}.{ 'npy' if algo == 'q_learning' else 'pt' }"

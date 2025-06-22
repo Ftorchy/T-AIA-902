@@ -1,0 +1,7 @@
+streamlit>=1.33
+altair>=5.3
+numpy>=2.0
+pandas>=2.0
+gymnasium>=0.29
+torch>=2.2
+matplotlib>=3.9
