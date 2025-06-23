@@ -1,164 +1,143 @@
-import gymnasium as gym
-import matplotlib.pyplot as plt
+from __future__ import annotations
 import numpy as np
-import pickle
-import time
+import pandas as pd
+import gymnasium as gym
+from time import perf_counter, process_time
 
-class QLearning:
-    def __init__(self, learning_rate=0.8, gamma=0.95, exploration_prob=0.6):
-        self.set_learning_rate(learning_rate)
-        self.set_gamma(gamma)
-        self.set_exploration_prob(exploration_prob)
-        self.env = gym.make("Taxi-v3")
-        self.Q_table = np.zeros([self.env.observation_space.n, self.env.action_space.n])
-        self.metrics = {
-            "rewards": [],
-            "steps": [],
-            "success_rate": [],
-            "epochs": 0,
-            "training_time": 0
-        }
-    
-    def train(self, epochs=1000):
-        if epochs <= 0:
-            raise self.__exception_factory(ValueError, "The number of epochs cannot be 0 or negative !")
+__all__ = ["train_tabular", "TabularQLearning"]
 
-        self.metrics = {
-            "rewards": [],
-            "steps": [],
-            "success_rate": 0,
-            "epochs": epochs,
-            "training_time": 0
-        }
-        
-        self.Q_table = np.zeros([self.env.observation_space.n, self.env.action_space.n])
-        start_time = time.perf_counter()
-        for i in range(epochs):
-            self.__q_learning_algo(isTraining=True)
-        end_time = time.perf_counter()
-        self.metrics["training_time"] = end_time - start_time
-        
-        print("Entraînement terminé")
-        print("Calcul des métriques en cours...")
-        self.calculate_metrics()
-        print("Métriques calculées")
+def train_tabular(
+    env_name: str = "Taxi-v3",
+    episodes: int = 5000,
+    alpha: float = 0.2,
+    gamma: float = 0.95,
+    eps0: float = 1.0,
+    eps_min: float = 0.01,
+    decay: float = 0.0005,
+    max_steps: int = 22,
+    progress_cb = None,
+):
+    learner = TabularQLearning(
+        env_name=env_name,
+        alpha=alpha,
+        gamma=gamma,
+        eps0=eps0,
+        eps_min=eps_min,
+        decay=decay,
+        max_steps=max_steps,
+    )
+    stats = learner.train(episodes, progress_cb)
+    return stats
 
-    def run(self):
-        self.env = gym.make("Taxi-v3", render_mode="human")
-        self.__q_learning_algo()
-        #Redefine the environment to non human in case of futur training of the agent
-        self.env = gym.make("Taxi-v3")
-    
-    def load_model(self, filename):
-        try:
-            with open(filename, "rb") as f:
-                data = pickle.load(f)
-                self.set_learning_rate(data["learning_rate"])
-                self.set_gamma(data["gamma"])    
-                self.set_exploration_prob(data["exploration_prob"])
-                self.Q_table = data["Q_table"]
-                self.metrics = data["metrics"]
-        except:
-            print("An error occured while trying to open the file") 
-        
+class TabularQLearning:
+    def __init__(
+        self,
+        env_name: str = "Taxi-v3",
+        alpha: float = 0.2,
+        gamma: float = 0.95,
+        eps0: float = 1.0,
+        eps_min: float = 0.01,
+        decay: float = 0.0005,
+        max_steps: int = 22,
+    ):
+        self.env_name = env_name
+        self.alpha = alpha
+        self.gamma = gamma
+        self.eps0 = eps0
+        self.eps_min = eps_min
+        self.decay = decay
+        self.max_steps = max_steps
 
-    def save_model(self, filename="model"):
-        try:
-            data = {
-                "Q_table": self.Q_table,
-                "metrics": self.metrics,
-                "learning_rate": self.learning_rate,
-                "gamma": self.gamma,
-                "exploration_prob": self.exploration_prob
-            }
-            with open(filename + ".pickle", "wb") as f:
-                pickle.dump(data, f)
-        except:
-            print("An error occured while trying to save the file") 
+        self.env = gym.make(self.env_name)
+        self.qtable = np.zeros(
+            (self.env.observation_space.n, self.env.action_space.n), dtype=np.float32
+        )
+        self.rewards = None
+        self.steps = None
+        self.epsilons = None
+        self.wall_times = None
+        self.cpu_times = None
+        self.total_wall = 0.0
+        self.total_cpu = 0.0
 
-    def __q_learning_algo(self, isTraining=False, isCalculate=False):
-            state = self.env.reset()
-            episode_over = False
+    def train(self, episodes: int = 5000, progress_cb=None):
+        rng = np.random.default_rng()
+        self.epsilons = np.maximum(
+            self.eps0 - self.decay * np.arange(episodes), self.eps_min
+        )
 
-            run_reward = 0
-            step_count = 0
-            success = False
-            state = state[0]
-            while not episode_over:
-                rand = np.random.rand()
-                if rand < self.exploration_prob and isTraining:
-                    action = np.argmax(self.Q_table[state] + rand) 
+        self.rewards = np.zeros(episodes, np.int16)
+        self.steps = np.zeros(episodes, np.int16)
+        self.wall_times = np.zeros(episodes, np.float32)
+        self.cpu_times = np.zeros(episodes, np.float32)
+
+        tic_global_wall = perf_counter()
+        tic_global_cpu = process_time()
+
+        for ep in range(episodes):
+            tic_w = perf_counter()
+            tic_c = process_time()
+
+            s, _ = self.env.reset(seed=ep)
+            tot_r = n_s = 0
+            for _ in range(self.max_steps):
+                n_s += 1
+                # ε-greedy
+                if rng.random() < self.epsilons[ep]:
+                    a = rng.integers(self.env.action_space.n)
                 else:
-                    action = np.argmax(self.Q_table[state]) 
-                
-                s_, reward, terminated, truncated, info = self.env.step(action)
-                
-                if isTraining: 
-                    self.Q_table[state,action] = (1.0 - self.learning_rate)*self.Q_table[state,action] + self.learning_rate*(reward + self.gamma * np.max(self.Q_table[s_,:]))
-                    run_reward += reward
-                step_count += 1
+                    a = int(self.qtable[s].argmax())
 
-                episode_over = terminated or truncated
-                success = terminated
-                state = s_
-                
-            
-            if isCalculate: 
-                if run_reward != 0:
-                    self.metrics["rewards"].append(run_reward / step_count)
-                else:
-                    self.metrics["rewards"].append(0)
+                ns, r, term, trunc, _ = self.env.step(a)
+                # Q‑Learning update
+                self.qtable[s, a] += self.alpha * (
+                    r + self.gamma * self.qtable[ns].max() - self.qtable[s, a]
+                )
+                tot_r += r
+                s = ns
+                if term or trunc:
+                    break
 
-                self.metrics["steps"].append(step_count)
+            self.rewards[ep] = tot_r
+            self.steps[ep] = n_s
+            self.wall_times[ep] = perf_counter() - tic_w
+            self.cpu_times[ep] = process_time() - tic_c
 
-                if success:
-                    self.metrics["success_rate"] += 1
+            if progress_cb is not None:
+                if callable(progress_cb):
+                    progress_cb((ep + 1) / episodes)
+                elif hasattr(progress_cb, "progress"):
+                    progress_cb.progress((ep + 1) / episodes,
+                             text=f"Episode {ep + 1}/{episodes}")
 
-            self.env.close()
-    
-    def calculate_metrics(self):
-        for i in range(1000):
-            self.__q_learning_algo(isCalculate=True)
+        self.total_wall = perf_counter() - tic_global_wall
+        self.total_cpu = process_time() - tic_global_cpu
 
-    def get_metrics(self):
-        return self.metrics
+        stats = {
+            "qtable": self.qtable,
+            "rewards": self.rewards,
+            "steps": self.steps,
+            "epsilons": self.epsilons,
+            "wall_times": self.wall_times,
+            "cpu_times": self.cpu_times,
+            "smooth_rewards": pd.Series(self.rewards).rolling(100).mean(),
+            "smooth_steps": pd.Series(self.steps).rolling(100).mean(),
+            "total_wall": self.total_wall,
+            "total_cpu": self.total_cpu,
+        }
+        return stats
 
-    def show_metrics(self):
-        fig, axs = plt.subplots(1, 2, figsize=(200, 5))
-        # axs[0].plot(rewards, 'tab:green')
-        # axs[0].set_title("Reward")
-        axs[0].plot(self.metrics["steps"], 'tab:purple')
-        axs[0].set_title("Step Count")
+    def act(self, state: int) -> int:
+        return int(self.qtable[state].argmax())
 
-        print("Overall Average reward:", np.mean(self.metrics["rewards"]))
-        print("Overall Average number of steps:", np.mean(self.metrics["steps"]))
-        print("Success rate (%):", self.metrics["success_rate"] / 1000 * 100)
-        print("Number of epochs:", self.metrics["epochs"])
-        print("Training Time(in secondes):", self.metrics["training_time"])
-
-        plt.show()
-
-    def set_learning_rate(self, lr):
-        if self.__check_is_between_0_and_1(value=lr, name="learning rate"):
-            self.learning_rate = lr
-
-    def set_gamma(self, gamma):
-        if self.__check_is_between_0_and_1(value=gamma, name="gamma"):
-            self.gamma = gamma
-
-    def set_exploration_prob(self, exploration_prob):
-        if self.__check_is_between_0_and_1(value=exploration_prob, name="exploration_prob"):
-            self.exploration_prob = exploration_prob
-
-    def __check_is_between_0_and_1(self, value, name):
-        message = f"The {name} hyperparameter must be between 0 and 1! \n"
-        if value > 1:
-            message += "Actually he is superior to 1!"
-            raise self.__exception_factory(ValueError, message)
-        elif value <= 0:
-            message += "He cannot be null or negatif!"
-            raise self.__exception_factory(ValueError, message)
-        return True
-            
-    def __exception_factory(self, exception, message):
-        return exception(message)
+    def play_greedy(self, render_mode: str = "ansi"):
+        env = gym.make(self.env_name, render_mode=render_mode)
+        s, _ = env.reset()
+        done = False
+        frames = []
+        while not done:
+            frames.append(env.render())
+            s, _, term, trunc, _ = env.step(self.act(s))
+            done = term or trunc
+        env.close()
+        return "".join(frames)

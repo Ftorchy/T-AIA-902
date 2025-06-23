@@ -1,141 +1,207 @@
-import numpy as np
 import streamlit as st
+import numpy as np
 import pandas as pd
-import datetime
-import altair as alt
 import gymnasium as gym
+import matplotlib.pyplot as plt
+import os, io, pickle
 from pathlib import Path
-from rl.trainers import q_learning as ql
-from rl.trainers import dqn
-from rl import model_bank as bank
+from QLearning import train_tabular
+from DeepQLearning import DeepQLearning
 
-MODELS_DIR = bank.MODELS_DIR
-# Mise en page globale
-st.set_page_config(page_title="Taxi RL Playground", layout="wide")
+st.set_page_config(page_title="RL Project - TaxiV3", layout="wide")
+st.title("Taxi-v3 – T-AIA Project - STG6")
 
-# Deux onglets dans la barre latérale
-q_tab, d_tab = st.sidebar.tabs(["Q-Learning", "Deep Q-Learning"])
+# Choix algo
+algo = st.sidebar.radio(
+    "Choose algorithm :",
+    ["Q-Learning", "Deep Q-Learning (DQN)"],
+)
+st.sidebar.markdown("---")
 
-# Contenu onglet Q-Learning (sidebar)
-with q_tab:
-    st.subheader("Paramètres Q‑Learning")
-    hp = dict(
-        episodes  = st.number_input("Episodes", 1000, 50000, 5000, 500, key="ql_ep"),
-        alpha     = st.slider("α", 0.0, 1.0, 0.7, 0.05, key="ql_alpha"),
-        gamma     = st.slider("γ", 0.0, 0.99, 0.95, 0.01, key="ql_gamma"),
-        eps0      = st.slider("ε₀", 0.0, 1.0, 1.0, 0.05, key="ql_eps0"),
-        eps_min   = st.slider("ε min", 0.0, 0.5, 0.05, 0.01, key="ql_epsmin"),
-        eps_decay = st.number_input("ε decay", 0.0001, 0.01, 0.0005, 0.0001,
-                                    format="%f", key="ql_epsdec"),
-    )
-    q_name = st.text_input("Nom modèle", placeholder="ql_best", key="ql_name")
-    if st.button("Entraîner & sauvegarder", key="ql_train"):
-        res = ql.train(ql.QLParams(**hp))
-        ok, saved_name = bank.save(q_name, res, hp)
-        st.success(f"Modèle enregistré sous « {saved_name} »") if ok else st.error(saved_name)
-        st.rerun()
 
-# Partie modèles sauvegardés
-    st.divider(); st.subheader("Modèles sauvegardés")
-    model_files = sorted(p.stem for p in MODELS_DIR.glob("*.json"))
-    chosen = st.selectbox("Choisir un modèle", ["--"] + model_files, index=0, key="sel_model")
-    if chosen != "--" and st.button("🗑️ Supprimer", key="del_model"):
-        bank.delete_model(chosen); st.rerun()
+# Section Q-Learning
+if algo == "Q-Learning":
+    st.header("Tabular Q-Learning")
 
-# Contenu onglet Deep-Q-Learning
-with d_tab:
-    st.subheader("Paramètres DQN")
-    dhp = dict(
-        episodes   = st.number_input("Episodes", 1000, 20000, 3000, 500, key="dqn_ep"),
-        gamma      = st.slider("γ", 0.0, 0.99, 0.95, 0.01, key="dqn_gamma"),
-        lr         = st.number_input("lr", 1e-5, 1e-2, 1e-3, format="%f", key="dqn_lr"),
-        eps0       = st.slider("ε₀", 0.0, 1.0, 1.0, 0.05, key="dqn_eps0"),
-        eps_min    = 0.05,
-        eps_decay  = 0.0005,
-        batch      = 64,
-        memory     = 20_000,
-        target_sync= 500,
-        max_steps  = 200,
-    )
-    d_name = st.text_input("Nom modèle", placeholder="dqn_best", key="dqn_name")
-    if st.button("Entraîner & sauvegarder", key="dqn_train"):
-        res = dqn.train(dhp)
-        ok, saved = bank.save(d_name, res, dhp)
-        st.success(f"Modèle enregistré sous « {saved} »") if ok else st.error(saved)
-        st.rerun() 
-    
-# Contenu page principal (si Deep-Q-Learning selectionné)
-st.title("Taxi-v3 – Modèles enregistrés")
+    # réglage hyperparamètres
+    episodes  = st.sidebar.slider("Episodes", 100, 25_000, 5_000, 100)
+    max_steps = st.sidebar.slider("Max steps / episode", 10, 100, 22, 1)
+    alpha     = st.sidebar.number_input("Learning-rate (α)", 0.01, 1.0, 0.20, 0.01)
+    gamma     = st.sidebar.number_input("Discount (γ)",     0.00, 0.999, 0.95, 0.01)
+    eps0      = st.sidebar.number_input("Epsilon", 0.0, 1.0, 1.00, 0.05)
+    eps_min   = st.sidebar.number_input("Epsilon min",     0.0, 1.0, 0.01, 0.01)
+    decay     = st.sidebar.number_input("Epsilon decay",   0.0, 0.1, 0.0005, 0.0001)
 
-if 'sel_model' in st.session_state and st.session_state.sel_model != "--":
-    model_name = st.session_state.sel_model
-    algo, data, meta = bank.load(model_name)
-    st.subheader(f"Détails du modèle : {model_name}")
+    colT, colL = st.columns(2)
+    train_btn  = colT.button("Train")
+    load_pkl   = colL.file_uploader("📂 Load model", type=["pkl"])
 
-    with st.expander("Hyper‑paramètres & méta"):
-        st.json(meta)
+    # Train & SAVE
+    if train_btn:
+        prog = st.progress(0.0, text="Training …")
+        stats = train_tabular("Taxi-v3", episodes, alpha, gamma,
+                              eps0, eps_min, decay, max_steps, prog)
+        prog.empty()
+        st.session_state["tab_stats"] = stats
+        st.success("Training complete")
 
-    def evaluate_qtable(q, n_eval=100, max_steps=200):
-        env = gym.make("Taxi-v3"); rows=[]
-        for _ in range(n_eval):
-            s,_ = env.reset(); tot_r=n=0; succ=0
-            for _ in range(max_steps):
-                a=int(np.argmax(q[s])); n+=1
-                s,r,term,trunc,_ = env.step(a); tot_r+=r
-                if term and r==20: succ=1
-                if term or trunc: break
-            rows.append((tot_r,n,succ))
-        env.close()
-        df=pd.DataFrame(rows, columns=["reward","steps","success"])
-        return df
+        # Sauvegarde
+        payload = {
+            "algo":  "qlearning",
+            "stats": stats,
+            "hp":    {
+                "episodes": episodes, "max_steps": max_steps,
+                "alpha": alpha, "gamma": gamma,
+                "eps0": eps0, "eps_min": eps_min, "decay": decay
+            }
+        }
+        buf = io.BytesIO(); pickle.dump(payload, buf)
+        st.download_button("Save model",
+                           data=buf.getvalue(),
+                           file_name="qlearning_taxi.pkl")
 
-    if algo == "q_learning":
-        eva = evaluate_qtable(data)
-        k1,k2,k3 = st.columns(3)
-        k1.metric("Reward moyen", f"{eva.reward.mean():.2f}")
-        k2.metric("Succès %", f"{100*eva.success.mean():.1f}%")
-        k3.metric("Steps moyen", f"{eva.steps.mean():.1f}")
+    # LOAD
+    if load_pkl is not None:
+        obj = pickle.load(load_pkl)
+        if obj.get("algo") == "qlearning":
+            st.session_state["tab_stats"] = obj["stats"]
+            st.session_state["tab_hp"]    = obj.get("hp", {})
+            st.success("Q-Learning model loaded")
+        else:
+            st.error("❌ This file is not a Q-Learning model")
 
-        c1,c2 = st.columns(2)
-        line_data = eva.reset_index().rename(columns={"index":"episode"})
-        c1.altair_chart(
-            alt.Chart(line_data).mark_line().encode(
-                x='episode', y='reward', tooltip=['episode','reward']
-            ).properties(height=250, title="Reward par épisode (éval×100)"),
-            use_container_width=True)
+    # DISPLAY
+    if "tab_stats" in st.session_state:
+        stats = st.session_state["tab_stats"]
+        hp    = st.session_state.get("tab_hp", {})
 
-        hist_data = eva.steps.value_counts().sort_index().reset_index()
-        hist_data.columns=['steps','count']
-        c2.altair_chart(
-            alt.Chart(hist_data).mark_bar().encode(
-                x=alt.X('steps:O', title='Steps'),
-                y=alt.Y('count:Q', title='Occurrences'),
-                tooltip=['steps','count']
-            ).properties(height=250, title="Distribution des steps"),
-            use_container_width=True)
-    else:
-        st.info("Évaluation rapide non implémentée pour ce type de modèle.")
+        # Hyper-parameters utilisés pour l'entrainement
+        st.subheader("Hyper-parameters")
+        hp_table = pd.DataFrame({
+            "Hyperparamètre": ["episodes","max_steps","alpha","gamma",
+                               "eps0","eps_min","decay"],
+            "Valeur": [hp.get("episodes", len(stats["rewards"])),
+                       hp.get("max_steps", max(stats["steps"])),
+                       f'{hp.get("alpha",alpha):.3f}',
+                       f'{hp.get("gamma",gamma):.3f}',
+                       f'{hp.get("eps0",eps0):.2f}',
+                       f'{hp.get("eps_min",eps_min):.2f}',
+                       f'{hp.get("decay",decay):.4f}'],
+        }).set_index("Hyperparamètre")
+        st.table(hp_table)
 
-st.divider(); st.subheader("Classement des modèles entrainés")
-rows=[]
-for meta_path in MODELS_DIR.glob("*.json"):
-    name=meta_path.stem; _,_,meta=bank.load(name)
-    rows.append({
-        "Modèle":name,"Algo":meta["algo"],"Reward":meta.get("reward_mean",0),
-        "Succès %":meta.get("success_pct",0),"Steps":meta.get("steps_mean",0),
-        "Episodes":meta.get("episodes",meta.get("EPIS","")),
-        "α":meta.get("alpha",meta.get("ALPHA","")),
-        "γ":meta.get("gamma",meta.get("GAMMA","")),
-        "ε₀":meta.get("eps0",meta.get("EPS0","")),
-        "ε min":meta.get("eps_min",meta.get("EPS_MIN","")),
-        "ε decay":meta.get("eps_decay",meta.get("EPS_DECAY","")),
-        "Date": (
-            lambda d: datetime.datetime.fromisoformat(d).strftime("%d/%m/%Y %H:%M")
-            if d else ""
-            )(meta.get("created", ""))
-    })
-if rows:
-    comp=pd.DataFrame(rows).sort_values(by=["Reward","Steps"],ascending=[False,True])
-    st.dataframe(comp,use_container_width=True,height=380)
+        # Curves
+        st.subheader("Metrics")
+        fig, ax = plt.subplots(2, 2, figsize=(11, 6))
+        ax[0,0].plot(stats["rewards"], alpha=.3)
+        ax[0,0].plot(stats["smooth_rewards"]); ax[0,0].set_title("Reward")
+        ax[0,1].plot(stats["steps"], alpha=.3)
+        ax[0,1].plot(stats["smooth_steps"]);  ax[0,1].set_title("Steps")
+        ax[1,0].plot(stats["epsilons"]);      ax[1,0].set_title("ε")
+        ax[1,1].plot(stats["cpu_times"]);     ax[1,1].set_title("CPU time/ep (s)")
+        for a in ax.ravel(): a.grid(alpha=.3)
+        plt.tight_layout(); st.pyplot(fig)
+
+        # Metrics
+        n_cpu       = os.cpu_count() or 1
+        cpu_single  = stats["total_cpu"] / stats["total_wall"]
+        cpu_global  = 100 * cpu_single / n_cpu
+        total_steps = stats["steps"].sum()
+        global_thr  = total_steps / stats["total_wall"]
+        reward_mean = stats["rewards"].mean()
+        steps_mean  = stats["steps"].mean()
+        reward_last = stats["rewards"][-100:].mean()
+        steps_last  = stats["steps"][-100:].mean()
+
+        st.subheader("📊 Global metrics")
+        st.markdown(f"""
+        **Elapsed time:** {stats['total_wall']:.2f}s  
+        **Throughput:** {global_thr:,.0f} steps/s  
+        **Total steps:** {total_steps:,}  
+        **CPU time:** {stats['total_cpu']:.2f}s  
+        **Avg. CPU load:** {cpu_global:.1f}%  
+
+        **Avg. reward (global):** {reward_mean:.2f}  
+        **Avg. steps (global):** {steps_mean:.1f}  
+
+        **Avg. reward (last 100):** {reward_last:.2f}  
+        **Avg. steps (last 100):** {steps_last:.1f}
+        """)
+
+
+# Section Deep Q-Learning (DQN)
 else:
-    st.info("Aucun modèle enregistré.")
+    st.header("Deep Q-Learning (DQN)")
+
+    # réglage des Hyper-parameters
+    epochs = st.sidebar.slider("Epochs", 1_000, 50_000, 10_000, 1_000)
+    batch_size = st.sidebar.number_input("Batch size", 16, 512, 64, 16)
+    learning_rate = st.sidebar.number_input("Learning-rate", 1e-4, 1.0, 0.001, 0.0005,
+                                            format="%.4f")
+    gamma = st.sidebar.number_input("Discount γ", 0.0, 0.999, 0.95, 0.01)
+    exploration = st.sidebar.number_input("Initial ε", 0.0, 1.0, 0.6, 0.05)
+    target_freq = st.sidebar.slider("Target-net update freq (steps)", 10, 1_000, 100, 10)
+    mem_size = st.sidebar.number_input("Replay memory size", 1_000, 50_000, 10_000, 1_000)
+
+    colT, colS, colL = st.columns(3)
+    train_clicked = colT.button("Train")
+    save_clicked  = colS.button("Save model")
+    load_pkl      = colL.file_uploader("Load model", type=["pkl"])
+
+    # Train
+    if train_clicked:
+        with st.spinner("Training DQN …"):
+            agent = DeepQLearning(
+                learning_rate=learning_rate,
+                gamma=gamma,
+                exploration_prob=exploration,
+                batch_size=batch_size,
+                target_net_update_freq=target_freq,
+                memory_size=mem_size,
+            )
+            agent.train(epochs=epochs)
+            st.session_state["dqn_agent"] = agent
+        st.success("Training complete")
+
+    # Save
+    if save_clicked:
+        if "dqn_agent" in st.session_state:
+            buf = io.BytesIO()
+            pickle.dump({"algo": "dqn", "agent": st.session_state["dqn_agent"]}, buf)
+            st.download_button("⬇️ Download DQN model",
+                               data=buf.getvalue(),
+                               file_name="dqn_taxi.pkl")
+        else:
+            st.warning("No DQN model to save")
+
+    # Load
+    if load_pkl is not None:
+        obj = pickle.load(load_pkl)
+        if obj.get("algo") == "dqn":
+            st.session_state["dqn_agent"] = obj["agent"]
+            st.success("DQN model loaded")
+        else:
+            st.error("❌ This file is not a DQN model")
+
+    # Metrics & curves
+    if "dqn_agent" in st.session_state:
+        agent = st.session_state["dqn_agent"]
+        if not agent.metrics["rewards"]:
+            with st.spinner("Evaluating agent (1000 episodes)…"):
+                agent.calculate_metrics()
+
+        m = agent.get_metrics()
+        st.subheader("Evaluation metrics")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Successes", f"{m['success_rate']} / 1000",
+                  f"{m['success_rate']/10:.1f}%")
+        c2.metric("Avg. steps",   f"{np.mean(m['steps']):.1f}")
+        c3.metric("Avg. reward",  f"{np.mean(m['rewards']):.2f}")
+
+        fig, ax = plt.subplots()
+        ax.plot(m["steps"])
+        ax.set_title("Steps per episode (evaluation)")
+        ax.set_xlabel("Episode")
+        ax.set_ylabel("Steps")
+        ax.grid(alpha=.3)
+        st.pyplot(fig)
