@@ -31,7 +31,6 @@ if algo == "Q-Learning":
     eps0      = st.sidebar.number_input("Epsilon", 0.0, 1.0, 1.00, 0.05)
     eps_min   = st.sidebar.number_input("Epsilon min",     0.0, 1.0, 0.01, 0.01)
     decay     = st.sidebar.number_input("Epsilon decay",   0.0, 0.1, 0.0005, 0.0001)
-
     colT, colL = st.columns(2)
     train_btn  = colT.button("Train")
     load_pkl   = colL.file_uploader("📂 Load model", type=["pkl"])
