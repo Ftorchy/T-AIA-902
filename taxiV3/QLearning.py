@@ -70,6 +70,7 @@ class TabularQLearning:
         self.steps = np.zeros(episodes, np.int16)
         self.wall_times = np.zeros(episodes, np.float32)
         self.cpu_times = np.zeros(episodes, np.float32)
+        self.success = np.zeros(episodes, np.int8)
 
         tic_global_wall = perf_counter()
         tic_global_cpu = process_time()
@@ -95,6 +96,12 @@ class TabularQLearning:
                 )
                 tot_r += r
                 s = ns
+                
+                if term and r == 20:          # épisode réussi
+                    succ_flag = 1
+                else:
+                    succ_flag = 0
+                
                 if term or trunc:
                     break
 
@@ -102,6 +109,7 @@ class TabularQLearning:
             self.steps[ep] = n_s
             self.wall_times[ep] = perf_counter() - tic_w
             self.cpu_times[ep] = process_time() - tic_c
+            self.success[ep] = succ_flag
 
             if progress_cb is not None:
                 if callable(progress_cb):
@@ -112,6 +120,7 @@ class TabularQLearning:
 
         self.total_wall = perf_counter() - tic_global_wall
         self.total_cpu = process_time() - tic_global_cpu
+        
 
         stats = {
             "qtable": self.qtable,
@@ -124,6 +133,8 @@ class TabularQLearning:
             "smooth_steps": pd.Series(self.steps).rolling(100).mean(),
             "total_wall": self.total_wall,
             "total_cpu": self.total_cpu,
+            "success": self.success,
+            "smooth_success": pd.Series(self.success).rolling(100).mean(),
         }
         return stats
 
