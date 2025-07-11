@@ -5,8 +5,8 @@ import gymnasium as gym
 import matplotlib.pyplot as plt
 import os, io, pickle
 from pathlib import Path
-from QLearning import train_tabular
-from DeepQLearning import DeepQLearning
+from .QLearning import train_tabular
+from .DeepQLearning import DeepQLearning
 
 st.set_page_config(page_title="RL Project - TaxiV3", layout="wide")
 st.title("Taxi-v3 – T-AIA Project - STG6")
