@@ -137,14 +137,17 @@ else:
     st.header("Deep Q-Learning (DQN)")
 
     # réglage des Hyper-parameters
-    epochs = st.sidebar.slider("Epochs", 1_000, 50_000, 10_000, 1_000)
-    batch_size = st.sidebar.number_input("Batch size", 16, 512, 64, 16)
+    epochs        = st.sidebar.slider("Epochs", 1_000, 50_000, 10_000, 1_000)
+    batch_size    = st.sidebar.number_input("Batch size", 16, 512, 64, 16)
     learning_rate = st.sidebar.number_input("Learning-rate", 1e-4, 1.0, 0.001, 0.0005,
-                                            format="%.4f")
-    gamma = st.sidebar.number_input("Discount γ", 0.0, 0.999, 0.95, 0.01)
-    exploration = st.sidebar.number_input("Initial ε", 0.0, 1.0, 0.6, 0.05)
-    target_freq = st.sidebar.slider("Target-net update freq (steps)", 10, 1_000, 100, 10)
-    mem_size = st.sidebar.number_input("Replay memory size", 1_000, 50_000, 10_000, 1_000)
+                                        format="%.4f")
+    gamma         = st.sidebar.number_input("Discount γ", 0.0, 0.999, 0.95, 0.01)
+    exploration   = st.sidebar.number_input("Initial ε", 0.0, 1.0, 0.6, 0.05)
+    epsilon_min   = st.sidebar.number_input("Epsilon min", 0.0, 1.0, 0.05, 0.05)
+    epsilon_decay = st.sidebar.number_input("Epsilon decay", 0.0, 0.9999, 0.9995, 0.0001,
+                                        format="%.4f")
+    target_freq   = st.sidebar.slider("Target-net update freq (steps)", 10, 1_000, 100, 10)
+    mem_size      = st.sidebar.number_input("Replay memory size", 1_000, 50_000, 10_000, 1_000)
 
     colT, colS, colL = st.columns(3)
     train_clicked = colT.button("Train")
