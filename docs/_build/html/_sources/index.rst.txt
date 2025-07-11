@@ -16,4 +16,3 @@ documentation for details.
    :caption: Référence API
 
    api
-
