@@ -8,7 +8,7 @@
 from pathlib import Path, PurePath
 import sys
 ROOT = Path(__file__).resolve().parents[2]     # repo root
-sys.path.insert(0, str(ROOT / "taxiV3"))       # ou le dossier contenant ton package
+sys.path.insert(0, str(ROOT))       # ou le dossier contenant ton package
 
 autosummary_generate = True
 autodoc_typehints   = "description"
