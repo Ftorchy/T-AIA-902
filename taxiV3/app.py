@@ -25,12 +25,12 @@ if algo == "Q-Learning":
 
     # réglage hyperparamètres
     episodes  = st.sidebar.slider("Episodes", 100, 25_000, 5_000, 100)
-    max_steps = st.sidebar.slider("Max steps / episode", 10, 100, 22, 1)
+    max_steps = st.sidebar.slider("Max steps / episode", 10, 500, 200, 1)
     alpha     = st.sidebar.number_input("Learning-rate (α)", 0.01, 1.0, 0.20, 0.01)
     gamma     = st.sidebar.number_input("Discount (γ)",     0.00, 0.999, 0.95, 0.01)
     eps0      = st.sidebar.number_input("Epsilon", 0.0, 1.0, 1.00, 0.05)
     eps_min   = st.sidebar.number_input("Epsilon min",     0.0, 1.0, 0.01, 0.01)
-    decay     = st.sidebar.number_input("Epsilon decay",   0.0, 0.1, 0.0005, 0.0001)
+    decay     = st.sidebar.number_input("Epsilon decay",   0.0, 0.1, 0.0005, 0.0001,format="%.4f")
     colT, colL = st.columns(2)
     train_btn  = colT.button("Train")
     load_pkl   = colL.file_uploader("📂 Load model", type=["pkl"])
@@ -111,20 +111,24 @@ if algo == "Q-Learning":
         steps_mean  = stats["steps"].mean()
         reward_last = stats["rewards"][-100:].mean()
         steps_last  = stats["steps"][-100:].mean()
+        success_mean = stats.get("success", np.zeros_like(stats["rewards"])).mean()
+        success_last = stats.get("success", np.zeros_like(stats["rewards"]))[-100:].mean()
 
         st.subheader("📊 Global metrics")
         st.markdown(f"""
         **Elapsed time:** {stats['total_wall']:.2f}s  
         **Throughput:** {global_thr:,.0f} steps/s  
         **Total steps:** {total_steps:,}  
-        **CPU time:** {stats['total_cpu']:.2f}s  
-        **Avg. CPU load:** {cpu_global:.1f}%  
+        **CPU time:** {stats['total_cpu']:.2f}s
+        **Avg. CPU load:** {cpu_global:.1f}%
 
         **Avg. reward (global):** {reward_mean:.2f}  
         **Avg. steps (global):** {steps_mean:.1f}  
+        **Success rate (global):** {success_mean*100:.1f}%  
 
         **Avg. reward (last 100):** {reward_last:.2f}  
-        **Avg. steps (last 100):** {steps_last:.1f}
+        **Avg. steps (last 100):** {steps_last:.1f}  
+        **Success rate (last 100):** {success_last*100:.1f}%  
         """)
 
 
@@ -133,14 +137,17 @@ else:
     st.header("Deep Q-Learning (DQN)")
 
     # réglage des Hyper-parameters
-    epochs = st.sidebar.slider("Epochs", 1_000, 50_000, 10_000, 1_000)
-    batch_size = st.sidebar.number_input("Batch size", 16, 512, 64, 16)
+    epochs        = st.sidebar.slider("Epochs", 1_000, 50_000, 10_000, 1_000)
+    batch_size    = st.sidebar.number_input("Batch size", 16, 512, 64, 16)
     learning_rate = st.sidebar.number_input("Learning-rate", 1e-4, 1.0, 0.001, 0.0005,
-                                            format="%.4f")
-    gamma = st.sidebar.number_input("Discount γ", 0.0, 0.999, 0.95, 0.01)
-    exploration = st.sidebar.number_input("Initial ε", 0.0, 1.0, 0.6, 0.05)
-    target_freq = st.sidebar.slider("Target-net update freq (steps)", 10, 1_000, 100, 10)
-    mem_size = st.sidebar.number_input("Replay memory size", 1_000, 50_000, 10_000, 1_000)
+                                        format="%.4f")
+    gamma         = st.sidebar.number_input("Discount γ", 0.0, 0.999, 0.95, 0.01)
+    exploration   = st.sidebar.number_input("Initial ε", 0.0, 1.0, 0.6, 0.05)
+    epsilon_min   = st.sidebar.number_input("Epsilon min", 0.0, 1.0, 0.05, 0.05)
+    epsilon_decay = st.sidebar.number_input("Epsilon decay", 0.0, 0.9999, 0.9995, 0.0001,
+                                        format="%.4f")
+    target_freq   = st.sidebar.slider("Target-net update freq (steps)", 10, 1_000, 100, 10)
+    mem_size      = st.sidebar.number_input("Replay memory size", 1_000, 50_000, 10_000, 1_000)
 
     colT, colS, colL = st.columns(3)
     train_clicked = colT.button("Train")
