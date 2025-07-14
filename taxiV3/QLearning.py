@@ -1,10 +1,25 @@
+"""Tabular Q-learning pour l’environnement *Taxi-v3* (Gymnasium).
+
+Fonctions exportées
+-------------------
+train_tabular
+    Entraîne un agent tabulaire prêt à l’emploi ; retourne un dictionnaire de
+    statistiques (récompenses, steps, temps CPU/Wall, etc.).
+TabularQLearning
+    Classe agent (méthodes ``train()``, ``act()``, ``play_greedy()``).
+QLearningAgent
+    Alias public vers :class:`TabularQLearning` pour simplifier l’API.
+
+Ce module est import-safe : tout dépendant lourd (Gymnasium) est déjà mocké
+dans ``docs/source/conf.py`` afin que Sphinx puisse générer la doc sur CI.
+"""
 from __future__ import annotations
 import numpy as np
 import pandas as pd
 import gymnasium as gym
 from time import perf_counter, process_time
 
-__all__ = ["train_tabular", "TabularQLearning"]
+__all__: list[str] = ["train_tabular", "TabularQLearning", "QLearningAgent"]  # ✨
 
 def train_tabular(
     env_name: str = "Taxi-v3",
@@ -16,7 +31,8 @@ def train_tabular(
     decay: float = 0.0005,
     max_steps: int = 22,
     progress_cb = None,
-):
+)-> dict[str, object]:
+    """Fonction utilitaire haut-niveau : entraîne et renvoie les stats."""
     learner = TabularQLearning(
         env_name=env_name,
         alpha=alpha,
@@ -30,6 +46,8 @@ def train_tabular(
     return stats
 
 class TabularQLearning:
+    """Agent Q-learning tabulaire pour *Taxi-v3*."""
+     
     def __init__(
         self,
         env_name: str = "Taxi-v3",

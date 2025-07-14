@@ -1,3 +1,26 @@
+"""Deep Q-Learning (DQN) pour l’environnement *Taxi-v3* (Gymnasium).
+
+Contenu public
+==============
+
+* ``ReplayMemory``  – buffer d’expérience basique (deque).
+* ``DQN``           – petit réseau PyTorch (embedding + MLP).
+* ``DeepQLearning`` – agent DQN prêt à entraîner / exécuter.
+
+Notes
+-----
+
+* Ce fichier dépend de *torch* et *gymnasium* : dans la doc Sphinx,
+  ces modules sont simulés via ``autodoc_mock_imports`` (voir *conf.py*),
+  ce qui évite d’installer CUDA sur le runner CI.
+"""
+
+from __future__ import annotations
+
+# -----------------------------------------------------------------------------
+# Imports standards et scientifiques
+# -----------------------------------------------------------------------------
+
 #ReplayMemory
 import random
 from collections import deque
@@ -14,6 +37,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+
+__all__: list[str] = ["ReplayMemory", "DQN", "DeepQLearning"]
 
 class ReplayMemory:
     def __init__(self, memory_size=10000, batch_size=64):
@@ -55,6 +80,24 @@ class DQN(nn.Module):
         return self.fc3(x)
 
 class DeepQLearning:   
+    """Agent Deep Q-Learning minimal pour *Taxi-v3*.
+
+    Parameters
+    ----------
+    learning_rate :
+        Taux d’apprentissage pour Adam.
+    gamma :
+        Facteur de discount.
+    exploration_prob :
+        ε – probabilité d’action aléatoire au départ.
+    batch_size :
+        Taille des mini-batches échantillonnés dans la mémoire.
+    target_net_update_freq :
+        Nombre d’étapes entre deux mises à jour du réseau cible.
+    memory_size :
+        Capacité du buffer de rejouement.
+    """
+    
     def __init__(self, learning_rate=0.8, gamma=0.95, exploration_prob=0.6, batch_size=64, target_net_update_freq=100, memory_size=10000):
         self.set_learning_rate(learning_rate)
         self.set_gamma(gamma)
@@ -110,6 +153,8 @@ class DeepQLearning:
         self.init_net()
 
         start_time = time.perf_counter()
+        
+        
 
         for i in range(epochs):
             self.__q_learning_algo(isTraining=True)

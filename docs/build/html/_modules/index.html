@@ -3,10 +3,9 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="../">
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>taxiV3.QLearning &mdash; TaxiV3 0.1.0 documentation</title>
+  <title>Overview: module code &mdash; TaxiV3 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
@@ -40,14 +39,10 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">taxiV3.QLearning</a><ul>
-<li><a class="reference internal" href="#fonctions-exportees">Fonctions exportées</a></li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../reference/api.html">API Reference</a></li>
 </ul>
-</li>
-</ul>
-</div>
+
         </div>
       </div>
     </nav>
@@ -62,9 +57,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">taxiV3.QLearning</li>
+      <li class="breadcrumb-item active">Overview: module code</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/api/taxiV3.QLearning.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -72,41 +66,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-taxiV3.QLearning">
-<span id="taxiv3-qlearning"></span><h1>taxiV3.QLearning<a class="headerlink" href="#module-taxiV3.QLearning" title="Link to this heading"></a></h1>
-<p>Tabular Q-learning pour l’environnement <em>Taxi-v3</em> (Gymnasium).</p>
-<section id="fonctions-exportees">
-<h2>Fonctions exportées<a class="headerlink" href="#fonctions-exportees" title="Link to this heading"></a></h2>
-<dl class="simple">
-<dt>train_tabular</dt><dd><p>Entraîne un agent tabulaire prêt à l’emploi ; retourne un dictionnaire de
-statistiques (récompenses, steps, temps CPU/Wall, etc.).</p>
-</dd>
-<dt>TabularQLearning</dt><dd><p>Classe agent (méthodes <code class="docutils literal notranslate"><span class="pre">train()</span></code>, <code class="docutils literal notranslate"><span class="pre">act()</span></code>, <code class="docutils literal notranslate"><span class="pre">play_greedy()</span></code>).</p>
-</dd>
-<dt>QLearningAgent</dt><dd><p>Alias public vers <code class="xref py py-class docutils literal notranslate"><span class="pre">TabularQLearning</span></code> pour simplifier l’API.</p>
-</dd>
-</dl>
-<p>Ce module est import-safe : tout dépendant lourd (Gymnasium) est déjà mocké
-dans <code class="docutils literal notranslate"><span class="pre">docs/source/conf.py</span></code> afin que Sphinx puisse générer la doc sur CI.</p>
-</section>
-<p class="rubric">Functions</p>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_tabular</span></code>([env_name, episodes, alpha, ...])</p></td>
-<td><p>Fonction utilitaire haut-niveau : entraîne et renvoie les stats.</p></td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Classes</p>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">TabularQLearning</span></code>([env_name, alpha, gamma, ...])</p></td>
-<td><p>Agent Q-learning tabulaire pour <em>Taxi-v3</em>.</p></td>
-</tr>
-</tbody>
-</table>
-</section>
-
+  <h1>All modules for which code is available</h1>
+<ul><li><a href="taxiV3/DeepQLearning.html">taxiV3.DeepQLearning</a></li>
+</ul>
 
            </div>
           </div>
